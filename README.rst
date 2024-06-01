@@ -4,16 +4,17 @@ Introduction
 The ``psykit`` package extends the capacity of the PsychoPy package in 
 generating stereoscopic stimuli and more.
 
-- PsychoPy comes with a limited support for stereoscopic display out-of-the-box. 
+- PsychoPy is a great tool for quickly creating psychophysical experiments. 
+  However, it has limited support for stereoscopic displays out-of-the-box. 
   The ``psykit.stereomode`` module provides the ``StereoWindow`` class, a drop-in 
   upgrade for ``psychopy.visual.Window``, which supports a wide variety of 
   stereo modes similar to Psychtoolbox in Matlab, including
 
   - 'left/right' (for prisms and mirrors)
-  - 'side-by-side-compressed' (for VR goggles)
+  - 'side-by-side-compressed' (for some VR goggles)
   - 'red/blue' (for anaglyph glasses)
-  - 'sequential' (for blue line sync shutter glasses)
-  - 'top/bottom' (for ProPixx projector double-height mode)
+  - 'sequential' (for blue line sync shutters)
+  - 'top/bottom' (for the double-height mode of ProPixx projector)
   - 'top/bottom-anticross' (same as above but with cross-talk compensation)
 
   Users can debug in one stereo mode and do experiment in another, without 
