@@ -68,6 +68,16 @@ The basic usage is intuitive:
     core.quit()
 
 
+For Builder users, it is easy to adapt an ordinary Window into a StereoWindow:
+
+.. code-block:: python
+
+    # Open an ordinary window (e.g., from the Builder)
+    win = visual.Window(monitor='testMonitor', units='deg', fullscr=False, color='gray')
+    # Adapt it into a stereo window
+    win = StereoWindow(win, stereoMode='top/bottom-anticross', crossTalk=[0.07,0.07])
+
+
 You may also find the following demo stripts useful:
 
 - demos/stereo_modes.py       # Switch between modes at runtime and adjust cross-talk compensation
@@ -79,8 +89,14 @@ You may also find the following demo stripts useful:
 Installation
 ============
 
-If you installed PsychoPy via the standalone installer, download and unzip the 
-``psykit`` source code and copy the package folder into the applicaton folder:
+The most convenient way to install ``psykit`` is via the "Plugin/packages manager"
+of Psychopy GUI interface. After opening the "Plugins & Packages" dialog, go to 
+the "Packages" tab, click "Open PIP terminal", execute "pip install psykit".
+If you want to upgrade an existing installation, execute "pip install -U psykit".
+
+If you installed PsychoPy via the standalone installer, it is also possible to 
+download and unzip the ``psykit`` source code and copy the package folder into 
+the applicaton folder:
 
 - For macOS: "/Applications/PsychoPy.app/Contents/Resources/lib/python3.8/psykit"
 - For Windows: "C:\\Program Files\\PsychoPy\\Lib\\site-packages\\psykit"

@@ -11,8 +11,8 @@ sys_platform = platform.system()
 
 
 class StereoWindow(visual.Window):
-    def __init__(self, stereoMode='left/right', crossTalk=None, flipCallback=None, 
-                 **kwargs):
+    def __init__(self, win=None, stereoMode='left/right', crossTalk=None, 
+                 flipCallback=None, **kwargs):
         '''
         A subclass of `psychopy.visual.Window` that supports many common 
         stereo modes, similar to Psychtoolbox in Matlab.
@@ -30,6 +30,10 @@ class StereoWindow(visual.Window):
 
         Parameters
         ----------
+        win : `psychopy.visual.Window` instance (optional)
+            If provided, adapt the existing Window into a StereoWindow. Mainly 
+            for using with the Builder.
+            By default (win=None), initialize a new StereoWindow from scratch.
         stereoMode : str
             - 'none': non-stereo mono display
             - 'quad-buffered': quad-buffers rendering if your graphics card 
@@ -116,16 +120,30 @@ class StereoWindow(visual.Window):
         # Handle the special case of 'quad-buffered' mode (requiring special backend window)
         if stereoMode == 'quad-buffered':
             self._stereoMode = stereoMode # Without calling the setter
-            kwargs.update(dict(stereo=True)) # Ask for a quad-buffer backend
-            super().__init__(**kwargs) # Call base class method
+            if win is None: # Create a StereoWindow from scratch
+                kwargs.update(dict(stereo=True)) # Ask for a quad-buffer backend
+                super().__init__(**kwargs) # Call base class method
+            else: # Adapt from an existing psychopy.visual.Window
+                self.__dict__.update(win.__dict__)
+                if not win.stereo: # This should go after __dict__.update for proper window closing
+                    raise ValueError("For 'quad-buffered' mode, we need a Window with stereo=True.")
         else:
             self._stereoMode = None
-            super().__init__(**kwargs) # Call base class method
+            if win is None: # Create a StereoWindow from scratch
+                super().__init__(**kwargs) # Call base class method
+            else: # Adapt from an existing psychopy.visual.Window
+                self.__dict__.update(win.__dict__)
+
             # Prepare framebuffers for binocular rendering
             # Create left eye and right eye framebuffers 
             # (for 'sequential' and anaglyph stereo modes)
             self._fboLE, self._texLE = gltools.create_framebuffer(self.size)
             self._fboRE, self._texRE = gltools.create_framebuffer(self.size)
+            for buffer in [self._fboLE, self._fboRE, 0]:
+                # Initialize FBO color to window background color
+                # Without this, the default color is blue if flip before setBuffer
+                GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, buffer)
+                self.clearBuffer()
             
             # Compile shader programs for different stereo modes
             self._stereoShaders = {}

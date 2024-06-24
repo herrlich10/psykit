@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="psykit",
-    version="1.0.1",
+    version="1.1.0",
     author="Your Name",
     author_email="herrlich10@gmail.com",
     description="A PsychoPy extension for stereoscopic display and more.",
