@@ -73,7 +73,7 @@ class StereoWindow(visual.Window):
 
                 | Mode          | Binocular <br>frame rate | Support <br>color image | Robust to <br>frame drops |
                 | ------------- | ------------------------ | ----------------------- | ------------------------- |
-                | 3DRB          | 120 Hz                   | No                      | Yes                       |
+                | RB3D          | 120 Hz                   | No                      | Yes                       |
                 | Blueline sync | 60 Hz                    | Yes                     | No                        |
                 | Double-height | 60 Hz                    | Yes                     | Yes                       |
             
