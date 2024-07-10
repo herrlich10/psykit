@@ -144,7 +144,7 @@ def set_polarizer_mode(win, pixx, mode):
         # - Only support binocuar 60 Hz frame rate
         # - Need to adjust EDID and restart ProPixx controller.
         if not win.size[1] > win.size[0]:
-            warnings.warn(f"The ProPixx ")
+            raise ValueError(f"The ProPixx controller is not set to double-height mode [1920x2160 @ 60 Hz]. Please adjust EDID using VPutil and restart ProPixx controller.")
         win.stereoMode = 'top/bottom-anticross'
         pixx.setDlpSequencerProgram('RGB')
         pixx.setVideoVesaBlueline(False)

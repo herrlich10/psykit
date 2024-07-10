@@ -2,7 +2,7 @@ Introduction
 ============
 
 The ``psykit`` package extends the capacity of the PsychoPy_ package in 
-generating stereoscopic stimuli and more.
+generating stereoscopic stimuli, using offscreen windows, and more.
 
 - PsychoPy is a great tool for quickly creating psychophysical experiments. 
   However, it has limited support for stereoscopic displays out-of-the-box. 
@@ -21,19 +21,38 @@ generating stereoscopic stimuli and more.
   needing to modify their code. Most modes can even be switched back and forth 
   `at runtime`_.
 
+- Sometimes, we need to dynamically render a complex scene and reuse it for 
+  multiple times, e.g., drawing a dynamic and complex background for both left-
+  and right-eye buffers. The ``psychopy.visual.BufferImageStim`` is not suitable
+  in this case because it is fast to draw but slower to init. The 
+  ``psykit.offscreen`` module provides the ``OffscreenWindow`` class, essentially 
+  a framebuffer designed for drawing various stimuli efficiently. These can then 
+  be rendered collectively at high speed. Unlike ``BufferImageStim``, 
+  ``OffscreenWindow`` is fast to draw and fast to init, and may significantly 
+  `reduce rendering time`_ and the risk of frame drops in the above use case.
+
+- PsychoPy users who come from Psychtoolbox sometimes miss the flexibility of the
+  ``Screen('DrawTexture')`` style `low-level API`_, e.g., for drawing only part of 
+  a texture. The ``psykit`` package implements some of these low-level functions
+  like ``psykit.create_texture`` and ``psykit.draw_texture`` for special use cases.
+  See `this example`_ for an interesting demo.
+
 - The ``psykit.gltools`` module provides an alternative and lightweight wrapper 
   (compared to ``psychopy.tools.gltools``) around modern OpenGL commands, e.g., 
-  shader, VAO, FBO, etc., used by ``psykit.stereomode``.
+  shader, VAO, FBO, etc., used by other modules.
 
-- The ``psykit/demos`` folder contains many example scripts demonstrating how to 
-  use ``psykit.stereomode.StereoWindow`` with ``psychopy``, as well as various
-  3D modes of the ProPixx projector.
+- The ``psykit/demos`` folder contains many example scripts demonstrating our 
+  favorite use cases, e.g., how to use ``psykit.stereomode.StereoWindow`` with 
+  ``psychopy``, as well as various 3D modes of the ProPixx projector.
 
 .. _PsychoPy: https://github.com/psychopy/psychopy
 .. _stereo modes: https://github.com/herrlich10/psykit/blob/master/psykit/stereomode.py#L33
 .. _ProPixx projector: https://github.com/herrlich10/psykit/blob/master/psykit/demos/propixx_polarizer.py
 .. _cross-talk compensation: https://github.com/herrlich10/psykit/blob/master/psykit/demos/stereo_modes.py
 .. _at runtime: https://github.com/herrlich10/psykit/blob/master/psykit/demos/stereo_modes.py
+.. _reduce rendering time: https://github.com/herrlich10/psykit/blob/master/psykit/demos/offscreen_window.py
+.. _low-level API: https://github.com/herrlich10/psykit/blob/master/psykit/demos/draw_texture.py
+.. _this example: https://github.com/herrlich10/psykit/blob/master/psykit/demos/draw_texture.py
 
 
 Documentation
@@ -80,10 +99,13 @@ For Builder users, it is easy to adapt an ordinary Window into a StereoWindow:
 
 You may also find the following demo stripts useful:
 
+- demos/minimum_example.py    # A minimum quickstart script that uses StereoWindow
 - demos/stereo_modes.py       # Switch between modes at runtime and adjust cross-talk compensation
 - demos/visual_stims.py       # Draw various stimuli (e.g., Aperture) in StereoWindow
 - demos/adjust_fixation.py    # Adjust vergence and coordinate origin for 'left/right' mode
 - demos/propixx_polarizer.py  # Work with different 3D modes of ProPixx projector
+- demos/offscreen_window.py   # Use OffscreenWindow to cache and reuse complex stimuli
+- demos/draw_texture.py       # Use draw_texture to only draw a selected part of a texture
 
 
 Installation

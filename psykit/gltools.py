@@ -210,6 +210,34 @@ def check_shader_status(shader, stage='compile', raise_error=True,
             print(message)
 
 
+# ========== Uniforms ==========
+def set_uniform(program, name, value):
+    '''
+    Set uniform value for shader programs.
+
+    Appropriate OpenGL function will be called according to the type, dtype, and
+    shape of the ``value``, e.g., a transformation should be a 4x4 float ndarray.
+    Currently, only support 4x4 matrix with float values, e.g., transformations.
+
+    Parameters
+    ----------
+    program : 
+        Shader program for which the uniform value will be set.
+    name : bytes
+        Name of the uniform variable in the shader.
+        e.g., b"transform"
+    value : 
+        New value for the uniform variable.
+    '''
+    loc = glGetUniformLocation(program, name)
+    if isinstance(value, np.ndarray):
+        if value.shape == (4,4):
+            if value.dtype.kind == 'f':  
+                # (uniform's location, how many matrices to send, transpose (default=GL_FALSE is F order), pointer to matrix values)
+                data = (GLfloat*value.size)(*value.flat)
+                glUniformMatrix4fv(loc, 1, GL_TRUE, data)
+
+
 # ========== Vertex buffer object (VBO) ==========
 def create_vertex_buffer(vertices, usage=GL_STATIC_DRAW, bind=False):
     '''
@@ -359,10 +387,11 @@ def compute_stride_offset(attributes):
 
 # ========== Textures ==========
 def create_texture(data, size=None, unit=0, warp=GL_REPEAT, 
-    min_filter=GL_LINEAR_MIPMAP_LINEAR, mag_filter=GL_LINEAR, mipmap=True, 
-    bind=False):
+    min_filter=None, mag_filter=GL_LINEAR, mipmap=True, bind=False):
     '''
     Create a 2D texture.
+
+    Currently, only support RGB and RGBA textures, either uint8 or float32.
 
     Parameters
     ----------
@@ -378,9 +407,12 @@ def create_texture(data, size=None, unit=0, warp=GL_REPEAT,
     warp : GL_REPEAT | GL_MIRRORED_REPEAT | GL_CLAMP_TO_EDGE | GL_CLAMP_TO_BORDER
         What happens when sampling outside the texture
     min_filter : GL_LINEAR | GL_NEAREST | GL_LINEAR_MIPMAP_LINEAR | GL_NEAREST_MIPMAP_NEAREST
-        Minifying filter
+        Minifying filter. 
+        If None, GL_LINEAR_MIPMAP_LINEAR if mipmap=True else GL_LINEAR.
     mag_filter : GL_LINEAR | GL_NEAREST
         Magnifying filter
+    mipmap : bool
+        Whether to enable mipmap (for efficient and high quality downscaling).
     bind : bool
         Whether to remain binding to GL_TEXTURE_2D after creation.
 
@@ -395,33 +427,50 @@ def create_texture(data, size=None, unit=0, warp=GL_REPEAT,
     glActiveTexture(eval(f"GL_TEXTURE{unit}")) # Activate specified texture unit
     glBindTexture(GL_TEXTURE_2D, texture) # Bind the texture
     # Set the texture wrapping/filtering options (on the currently bound texture object)
+    if min_filter is None:
+        min_filter = GL_LINEAR_MIPMAP_LINEAR if mipmap else GL_LINEAR
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, warp)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, warp)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter)
     # Load texture data
+    src_fmt = None
     if data is not None:
+        data = data[::-1] # flipud: array origin is at upper left but texture is at lower left
         height, width, n_channels = data.shape
         if n_channels == 3:
             src_fmt = GL_RGB
-        elif n_channels== 4:
+        elif n_channels == 4:
             src_fmt = GL_RGBA
-        if data.dtype.kind == 'i': # np.issubdtype(dtype, np.integer), assuming 0~255
+        if data.dtype.kind in ['i', 'u']: # np.issubdtype(dtype, np.integer), assuming 0~255
             src_dtype = GL_UNSIGNED_BYTE
-            data = (GLubyte*data.size)(*data.astype(np.uint8).flat)  
+            data = (GLubyte*data.size)(*data.astype(np.uint8).flat)
         elif data.dtype.kind == 'f': # np.issubdtype(dtype, np.floating), assuming 0~1 or -1~1
             assert (data.max() <= 1)
             src_dtype = GL_FLOAT
-            data = (GLfloat*data.size)(*data.flat)
+            data = (GLfloat*data.size)(*data.astype(np.float32).flat)
     else:
         assert (size is not None)
         width, height = size
         src_fmt = GL_RGB
         src_dtype = GL_UNSIGNED_BYTE
+    # Relax 4-byte-alignment requirement for RGB ubyte data
+    not_aligned = (src_fmt == GL_RGB and src_dtype == GL_UNSIGNED_BYTE)
+    if not_aligned:
+        alignment = GLint()
+        glGetIntegerv(GL_UNPACK_ALIGNMENT, alignment)
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1) # Relax alignment
     # (texture target (so that GL_TEXTURE_1D and 3D are unaffected), mipmap level (base level=0), 
     #   texture color format, texture width, texture height, lagacy, 
     #   source color format, source dtype, source data)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, src_fmt, src_dtype, data)
+    if src_fmt == GL_RGB:
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, src_fmt, src_dtype, data)
+    elif src_fmt == GL_RGBA:
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, src_fmt, src_dtype, data)
+    else:
+        NotImplementedError(f"Only support GL_RGB and GL_RGBA texture at the moment.")
+    if not_aligned:
+        glPixelStorei(GL_UNPACK_ALIGNMENT, alignment) # Restore alignment
     # Generate mipmap for minifying
     if mipmap:
         glGenerateMipmap(GL_TEXTURE_2D)

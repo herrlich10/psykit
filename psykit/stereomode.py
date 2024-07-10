@@ -416,7 +416,7 @@ class StereoWindow(visual.Window):
                     self._crossTalk[1], self._crossTalk[1], self._crossTalk[1])
             else:
                 gltools.use_texture(self._texRE, 0) # Bind RE to texture unit 0
-        # Draw a rectangle combing(in fact, two triangles)
+        # Draw a rectangle (in fact, two triangles)
         # (primitive, number of vertices to draw, dtype of indices, offset of indices)
         GL.glDrawElements(GL.GL_TRIANGLES, 6, GL.GL_UNSIGNED_INT, 0)
         # Reset VAO and shader program (otherwise it may interfere with e.g., SimpleImageStim)
