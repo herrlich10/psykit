@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# An example showing how the use of offscreen window (or framebuffer) to cache
-# Press `escape` to quit.
+# An interesting demo ("antique viewer") for `create_texture` and `draw_texture`.
+# - Move mouse cursor to zoom and check image details (draw only part of the texture).
+# - Click left button to de-emphasize the background (change texture global alpha)
+# - Scroll to rotate the zoomed view (change texture rotation angle)
+# - Press `escape` to quit.
+#
 # 2024-07-10: created by qcc
 # import sys, os.path as path
 # sys.path.insert(0, path.realpath(f"{path.dirname(__file__)}/../.."))

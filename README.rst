@@ -39,7 +39,7 @@ generating stereoscopic stimuli, using offscreen windows, and more.
 
 - The ``psykit.gltools`` module provides an alternative and lightweight wrapper 
   (compared to ``psychopy.tools.gltools``) around modern OpenGL commands, e.g., 
-  shader, VAO, FBO, etc., used by other modules.
+  shader, VAO, FBO, etc., which are used by other modules.
 
 - The ``psykit/demos`` folder contains many example scripts demonstrating our 
   favorite use cases, e.g., how to use ``psykit.stereomode.StereoWindow`` with 

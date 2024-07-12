@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
+# Direct import is usually not possible because psychopy is not in the environment
 
 setup(
     name="psykit",
-    version="1.2.0",
-    author="Your Name",
+    version=open('psykit/__version__').read().strip(),
+    author="herrlich10",
     author_email="herrlich10@gmail.com",
     description="A PsychoPy extension for stereoscopic display and more.",
     long_description=open('README.rst').read(),
