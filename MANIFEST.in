@@ -1,0 +1,8 @@
+include *.rst
+include LICENSE.txt
+# include requirements.txt
+
+include psykit/__version__
+
+include psykit/demos/*.jpg
+include psykit/demos/*.png
