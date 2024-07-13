@@ -41,6 +41,9 @@ generating stereoscopic stimuli, using offscreen windows, and more.
   (compared to ``psychopy.tools.gltools``) around modern OpenGL commands, e.g., 
   shader, VAO, FBO, etc., which are used by other modules.
 
+- The ``psykit.pupillabs`` module provides utilities to work with pupil-labs 
+  eye-trackers like the Neon.
+
 - The ``psykit/demos`` folder contains many example scripts demonstrating our 
   favorite use cases, e.g., how to use ``psykit.stereomode.StereoWindow`` with 
   ``psychopy``, as well as various 3D modes of the ProPixx projector.
@@ -63,7 +66,7 @@ The basic usage is intuitive:
 .. code-block:: python
 
     from psychopy import visual, event, core
-    from psykit.stereomode import StereoWindow
+    from psykit import StereoWindow # from psykit.stereomode import StereoWindow
 
     # Open a stereo window
     win = StereoWindow(monitor='testMonitor', units='deg', fullscr=False, 
@@ -95,6 +98,25 @@ For Builder users, it is easy to adapt an ordinary Window into a StereoWindow:
     win = visual.Window(monitor='testMonitor', units='deg', fullscr=False, color='gray')
     # Adapt it into a stereo window
     win = StereoWindow(win, stereoMode='top/bottom-anticross', crossTalk=[0.07,0.07])
+
+
+To use an OffscreenWindow as a drawing buffer to cache and reuse intermediate
+drawing results:
+
+.. code-block:: python
+
+    from psykit import OffscreenWindow # from psykit.offscreen import OffscreenWindow
+
+    buffer = OffscreenWindow(win) # Create an offscreen window
+    buffer.bind() # Bind the offscreen window's framebuffer to redirect drawings
+    draw_many_stims()
+    buffer.unbind() # After unbinding, subsequent drawings go back to default screen
+    # Draw left eye stimuli
+    win.setBuffer('left')
+    buffer.draw() # Draw the content of the offscreen window as a texture
+    # Draw right eye stimuli
+    win.setBuffer('right')
+    buffer.draw() # Draw again and save some time
 
 
 You may also find the following demo stripts useful:

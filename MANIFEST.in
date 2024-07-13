@@ -6,3 +6,5 @@ include psykit/__version__
 
 include psykit/demos/*.jpg
 include psykit/demos/*.png
+
+include psykit/data/*.jpg
