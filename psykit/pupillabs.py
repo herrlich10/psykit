@@ -3,6 +3,7 @@
 # 2024-07-13: created by qcc
 import numpy as np
 import matplotlib.pyplot as plt
+from .data import data_path
 
 
 def load_tags():
@@ -24,7 +25,7 @@ def load_tags():
     '''
     tags = []
     for fname in ['apriltags_tag36h11_0-23.jpg', 'apriltags_tag36h11_24-47.jpg']:
-        im = plt.imread(f"data/{fname}")
+        im = plt.imread(f"{data_path}/{fname}")
         for m in range(6):
             for n in range(4):
                 tags.append(im[65+m*384:448+m*384,65+n*384:448+n*384])
