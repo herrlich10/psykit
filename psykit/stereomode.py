@@ -521,8 +521,8 @@ class StereoWindow(visual.Window):
 
     @property
     def fixationVergence(self):
-        v = layout.Vector(self._fixationVergence, 'pix', self)
-        return getattr(v, self.units)
+        v = layout.Vector([self._fixationVergence, 0], 'pix', self)
+        return getattr(v, self.units)[0]
 
     @fixationVergence.setter
     def fixationVergence(self, vergence):
@@ -539,13 +539,13 @@ class StereoWindow(visual.Window):
         vergence : float
             In the units of the window (e.g., 'deg').
         '''
-        v = layout.Vector(vergence, self.units, self)
-        self._fixationVergence = v.pix
+        v = layout.Vector([vergence, 0], self.units, self)
+        self._fixationVergence = v.pix[0]
 
     @property
     def fixationTilt(self):
-        v = layout.Vector(self._fixationTilt, 'pix', self)
-        return getattr(v, self.units)
+        v = layout.Vector([0, self._fixationTilt], 'pix', self)
+        return getattr(v, self.units)[1]
 
     @fixationTilt.setter
     def fixationTilt(self, tilt):
@@ -562,8 +562,8 @@ class StereoWindow(visual.Window):
         tilt : float
             In the units of the window (e.g., 'deg').
         '''
-        v = layout.Vector(tilt, self.units, self)
-        self._fixationTilt = v.pix
+        v = layout.Vector([0, tilt], self.units, self)
+        self._fixationTilt = v.pix[1]
 
 
 
