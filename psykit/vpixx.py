@@ -18,7 +18,8 @@ def reset_propixx(pixx, config=None):
         An initialized PROPixx object, e.g., ``pixx = pypixxlib.propixx.PROPixx()``.
     config : str or dict
         If provided, reset ProPixx to the modes defined by a config file (*.json)
-        or a dict.
+        or a dict, e.g., for fMRI experiments with one mirror in the light path, 
+        ``config=dict(RearProjectionMode=False)``.
     '''
     # Default configuration
     cfg = {
@@ -92,6 +93,8 @@ def set_polarizer_mode(win, pixx, mode):
             After the experiment, remember to restore the EDID to default mode,
             so the next user will not get confused: 
                 ``edid > 0 > n > restart controller``
+        - Other valid stereo mode for StereoWindow, without using any special 3D 
+            functionalities from ProPixx. E.g., 'left/right', 'red/blue', etc.
     '''
     if mode == 'none':
         win.stereoMode = 'none'
@@ -146,6 +149,12 @@ def set_polarizer_mode(win, pixx, mode):
         if not win.size[1] > win.size[0]:
             raise ValueError(f"The ProPixx controller is not set to double-height mode [1920x2160 @ 60 Hz]. Please adjust EDID using VPutil and restart ProPixx controller.")
         win.stereoMode = 'top/bottom-anticross'
+        pixx.setDlpSequencerProgram('RGB')
+        pixx.setVideoVesaBlueline(False)
+        pixx.setVesaFreeRun(False)
+        pixx.updateRegisterCache()
+    else: # Must be valid stereomode for StereoWindow, e.g., 'left/right', 'red/blue', etc.
+        win.stereoMode = mode
         pixx.setDlpSequencerProgram('RGB')
         pixx.setVideoVesaBlueline(False)
         pixx.setVesaFreeRun(False)
