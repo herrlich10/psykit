@@ -112,6 +112,7 @@ class StereoWindow(visual.Window):
             in 'sequential' mode. Useful for sending sync signal to the goggles 
             or shutter glasses, e.g., the first generation NNL goggles.
         '''
+        print("You are using a test version of psykit")
         # Initialize property variables
         self._fixationOffset = np.r_[0.0, 0.0]
         self._fixationVergence = 0.0
@@ -628,7 +629,10 @@ fragCompensated_src = '''
     {
         vec4 colorThis = texture2D(textureThis, TexCoords);
         vec4 colorOther = texture2D(textureOther, TexCoords);
-        gl_FragColor = ((colorThis*2.0-1.0) - vec4(crossTalk, 0)*(colorOther*2.0-1.0) +1.0)/2.0;
+        // gl_FragColor = ((colorThis*2.0-1.0) - vec4(crossTalk, 0)*(colorOther*2.0-1.0) +1.0)/2.0;
+        // 2025-03-28: New method
+        // gl_FragColor = clamp(colorThis - vec4(crossTalk, 0) * colorOther, 0.0, 1.0);
+        gl_FragColor = max(colorThis - vec4(crossTalk, 0) * colorOther, 0.0);
     }
 '''
 
@@ -652,10 +656,15 @@ for mode, cmd in [  ('red/green', 'vec4(colorLE.r, colorRE.g, 0.0, 1.0)'),
     '''
 
 # Fragment shaders for anaglyph modes with cross-talk compensation
-for mode, cmd in [  ('red/green-anticross', 'vec4(((colorLE.r*2.0-1.0) - crossTalk.x*(colorRE.g*2.0-1.0) +1.0)/2.0, ((colorRE.g*2.0-1.0) - crossTalk.y*(colorLE.r*2.0-1.0) +1.0)/2.0, 0.0, 1.0)'),
-                    ('green/red-anticross', 'vec4(((colorRE.r*2.0-1.0) - crossTalk.y*(colorLE.g*2.0-1.0) +1.0)/2.0, ((colorLE.g*2.0-1.0) - crossTalk.x*(colorRE.r*2.0-1.0) +1.0)/2.0, 0.0, 1.0)'),
-                    ('red/blue-anticross',  'vec4(((colorLE.r*2.0-1.0) - crossTalk.x*(colorRE.b*2.0-1.0) +1.0)/2.0, 0.0, ((colorRE.b*2.0-1.0) - crossTalk.y*(colorLE.r*2.0-1.0) +1.0)/2.0, 1.0)'),
-                    ('blue/red-anticross',  'vec4(((colorRE.r*2.0-1.0) - crossTalk.y*(colorLE.b*2.0-1.0) +1.0)/2.0, 0.0, ((colorLE.b*2.0-1.0) - crossTalk.x*(colorRE.r*2.0-1.0) +1.0)/2.0, 1.0)'),
+for mode, cmd in [  # ('red/green-anticross', 'vec4(((colorLE.r*2.0-1.0) - crossTalk.x*(colorRE.g*2.0-1.0) +1.0)/2.0, ((colorRE.g*2.0-1.0) - crossTalk.y*(colorLE.r*2.0-1.0) +1.0)/2.0, 0.0, 1.0)'),
+                    # ('green/red-anticross', 'vec4(((colorRE.r*2.0-1.0) - crossTalk.y*(colorLE.g*2.0-1.0) +1.0)/2.0, ((colorLE.g*2.0-1.0) - crossTalk.x*(colorRE.r*2.0-1.0) +1.0)/2.0, 0.0, 1.0)'),
+                    # ('red/blue-anticross',  'vec4(((colorLE.r*2.0-1.0) - crossTalk.x*(colorRE.b*2.0-1.0) +1.0)/2.0, 0.0, ((colorRE.b*2.0-1.0) - crossTalk.y*(colorLE.r*2.0-1.0) +1.0)/2.0, 1.0)'),
+                    # ('blue/red-anticross',  'vec4(((colorRE.r*2.0-1.0) - crossTalk.y*(colorLE.b*2.0-1.0) +1.0)/2.0, 0.0, ((colorLE.b*2.0-1.0) - crossTalk.x*(colorRE.r*2.0-1.0) +1.0)/2.0, 1.0)'),
+                    # 2025-03-28: New method
+                    ('red/green-anticross', 'vec4(max(colorLE.r - crossTalk.x*colorRE.g, 0.0), max(colorRE.g - crossTalk.y*colorLE.r, 0.0), 0.0, 1.0)'),
+                    ('green/red-anticross', 'vec4(max(colorRE.r - crossTalk.y*colorLE.g, 0.0), max(colorLE.g - crossTalk.x*colorRE.r, 0.0), 0.0, 1.0)'),
+                    ('red/blue-anticross',  'vec4(max(colorLE.r - crossTalk.x*colorRE.b, 0.0), 0.0, max(colorRE.b - crossTalk.y*colorLE.r, 0.0), 1.0)'),
+                    ('blue/red-anticross',  'vec4(max(colorRE.r - crossTalk.y*colorLE.b, 0.0), 0.0, max(colorLE.b - crossTalk.x*colorRE.r, 0.0), 1.0)'),
                  ]:
     fragAnaglyph_src[mode] = f'''
         varying vec2 TexCoords;     // in

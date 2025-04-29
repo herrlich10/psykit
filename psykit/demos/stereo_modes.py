@@ -3,6 +3,8 @@
 # Example script that allows you to switch between different stereo modes.
 # Press `space` (or `left`/`right`) to iterate through different stereo modes.
 # Press `up`/`down` to increase/decrease cross-talk compensation for both eyes.
+# Press `r`/`f` to increase/decrease cross-talk compensation for the left eyes.
+# Press `u`/`j` to increase/decrease cross-talk compensation for the right eyes.
 # Press `escape` to quit.
 from psychopy import visual, event, core
 import sys, os.path as path
@@ -64,6 +66,18 @@ while True:
     elif 'down' in pressedKeys:
         win.crossTalk = win.crossTalk - 0.01
         print(win.crossTalk)
+    elif 'r' in pressedKeys:
+        win.crossTalk = win.crossTalk + [0.01, 0]
+        print(win.crossTalk)
+    elif 'f' in pressedKeys:
+        win.crossTalk = win.crossTalk - [0.01, 0]
+        print(win.crossTalk)
+    elif 'u' in pressedKeys:
+        win.crossTalk = win.crossTalk + [0, 0.01]
+        print(win.crossTalk)
+    elif 'j' in pressedKeys:
+        win.crossTalk = win.crossTalk - [0, 0.01]
+        print(win.crossTalk)    
     elif 'p' in pressedKeys:
         paused = not paused
 # Clean up
