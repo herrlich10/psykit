@@ -19,8 +19,8 @@ class StereoWindow(visual.Window):
 
         Users can debug in one mode and do experiment in another, without the 
         need to change their code.
-        Note that 'quad-buffered' mode can only be specified during window 
-        initialization. Once set, it cannot be changed. 
+        Note that 'quad-buffered' and 'dual-head' modes can only be specified 
+        during window initialization. Once set, it cannot be changed. 
         Other modes can be freely switched back and forth at any time.
 
         You can switch between left- and right-eye scenes for drawing operations 
@@ -39,6 +39,13 @@ class StereoWindow(visual.Window):
             - 'quad-buffered': quad-buffers rendering if your graphics card 
                 supports. This is the same as using a `psychopy.visual.Window`
                 with `stereo=True`.
+            - 'dual-head' (for goggles require two video inputs, e.g. the 
+                Resonance CinemaVision CV2020 MRI-compatible goggles): 
+                Display two eye's images in two separate windows opened in (possibly) 
+                two physical screens, specified by `screen` (default 0) and 
+                `screen2` (default 1).
+                You just need to setBuffer in turn and flip once as usual. No 
+                need to explicitly interact with the 2nd window during drawing.
             - 'sequential' (for shutter glasses and some goggles, e.g., NNL goggles): 
                 Temporally interleaved mode (odd and even frames).
                 StereoWindow will automatically generate blue sync lines at the 
@@ -77,6 +84,10 @@ class StereoWindow(visual.Window):
                 | Blueline sync | 60 Hz                    | Yes                     | No                        |
                 | Double-height | 60 Hz                    | Yes                     | Yes                       |
             
+                You can switch to ProPixx double-height image mode as follows:
+                VPutil > devsel ppc > 2 > edid > 18 > 18 > n > reboot the bluebox
+                To switch back to ordinary mode:
+                VPutil > devsel ppc > 2 > edid > 0 > n > reboot the bluebox
             - 'top/bottom-anticross', 'bottom/top-anticross' (e.g., for ProPixx 
                 double-height EDID with cross-talk compensation):
                 Like the above, but trying to reduce cross-talk and compensate 
@@ -112,7 +123,6 @@ class StereoWindow(visual.Window):
             in 'sequential' mode. Useful for sending sync signal to the goggles 
             or shutter glasses, e.g., the first generation NNL goggles.
         '''
-        print("You are using a test version of psykit")
         # Initialize property variables
         self._fixationOffset = np.r_[0.0, 0.0]
         self._fixationVergence = 0.0
@@ -131,8 +141,16 @@ class StereoWindow(visual.Window):
         else:
             self._stereoMode = None
             if win is None: # Create a StereoWindow from scratch
+                # Handle dual-head (two windows) mode
+                if stereoMode == 'dual-head':
+                    screen2 = kwargs.pop('screen2', 1)
+                    kwargs2 = kwargs.copy()
+                    kwargs2.update(screen=screen2, waitBlanking=False)
+                    self.win2 = visual.Window(**kwargs2)
                 super().__init__(**kwargs) # Call base class method
             else: # Adapt from an existing psychopy.visual.Window
+                if stereoMode == 'dual-head':
+                    raise NotImplementedError
                 self.__dict__.update(win.__dict__)
 
             # Prepare framebuffers for binocular rendering
@@ -161,7 +179,7 @@ class StereoWindow(visual.Window):
             program = gltools.compile_shader_program(
                 vertTexture_src, fragTexture_src)
             gltools.use_texture(self._texLE, 0, program, b"aTex")
-            for mode in ['sequential', 'side-by-side-compressed']:
+            for mode in ['sequential', 'side-by-side-compressed', 'dual-head']:
                 self._stereoShaders[mode] = program
             # Shader program for 'left/right' and 'right/left' modes
             program = gltools.compile_shader_program(
@@ -202,7 +220,8 @@ class StereoWindow(visual.Window):
             self._screenVAO = gltools.create_vertex_array(vertices, attributes, indices)
             
             # Set stereo mode (except for 'quad-buffered' mode)
-            self.stereoMode = stereoMode
+            # self.stereoMode = stereoMode
+            self._stereoMode = stereoMode
             # Set cross-talk factors
             self.crossTalk = crossTalk
             # Set flip callback
@@ -250,6 +269,7 @@ class StereoWindow(visual.Window):
         stereoMode : str
             - 'none'
             - 'quad-buffered'
+            - 'dual-head'
             - 'sequential'
             - 'left/right', 'right/left'
             - 'side-by-side-compressed' (e.g., Goovis goggles)
@@ -261,6 +281,8 @@ class StereoWindow(visual.Window):
         '''
         if stereoMode == 'quad-buffered' or self.stereoMode == 'quad-buffered':
             raise ValueError("'quad-buffered' mode can only be specified during window initialization. Once set, it cannot be changed.")
+        elif stereoMode == 'dual-head' or self.stereoMode == 'dual-head':
+            raise ValueError("'dual-head' mode can only be specified during window initialization. Once set, it cannot be changed.")
         self._stereoMode = stereoMode
 
 
@@ -300,6 +322,15 @@ class StereoWindow(visual.Window):
                 GL.glEnable(GL.GL_DEPTH_TEST)
             if self.stencilTest:
                 GL.glEnable(GL.GL_STENCIL_TEST)
+
+
+    def close(self):
+        '''Close the window(s).
+        '''
+        if self.stereoMode == 'dual-head':
+            self.win2.close()
+        # Call base class method
+        super().close()
 
 
     def flip(self, clearBuffer=True):
@@ -369,10 +400,26 @@ class StereoWindow(visual.Window):
                     self.flipCallback(eye='left')
                 self._blipEyeBuffer(eye='right')
                 self._drawBlueLine(eye='right')
+            elif self.stereoMode in ['dual-head']:
+                # We need to flip twice in 'dual-head' mode
+                self._blipEyeBuffer(eye='left')
+                self._drawBlueLine(eye='left')
             # Call base class method
             flipTime = super().flip(clearBuffer=clearBuffer)
             if self.stereoMode in ['sequential'] and self.flipCallback is not None:
                 self.flipCallback(eye='right')
+            elif self.stereoMode in ['dual-head']:
+                if self.flipCallback is not None:
+                    self.flipCallback(eye='left')
+                # Make the second window's OpenGL context current
+                self.win2._setCurrent()
+                self._blipEyeBuffer(eye='right')
+                self._drawBlueLine(eye='right')
+                self.win2.flip(clearBuffer=clearBuffer) # waitBlanking=False, return None
+                if self.flipCallback is not None:
+                    self.flipCallback(eye='right')
+                # Restore the main window's OpenGL context current
+                self._setCurrent()
             # Restore autoDraw
             self._toDraw = backup
         # Return flip time

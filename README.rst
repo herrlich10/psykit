@@ -12,6 +12,7 @@ generating stereoscopic stimuli, using offscreen windows, and more.
 
   - 'left/right' (for prisms and mirrors)
   - 'side-by-side-compressed' (for some VR goggles)
+  - 'dual-head' (for some VR goggles with `two video inputs`_)
   - 'red/blue' (for anaglyph glasses)
   - 'sequential' (for blue line sync shutters)
   - 'top/bottom' (for the double-height mode of `ProPixx projector`_)
@@ -50,6 +51,7 @@ generating stereoscopic stimuli, using offscreen windows, and more.
 
 .. _PsychoPy: https://github.com/psychopy/psychopy
 .. _stereo modes: https://github.com/herrlich10/psykit/blob/master/psykit/stereomode.py#L33
+.. _two video inputs: https://github.com/herrlich10/psykit/blob/master/psykit/demos/dualhead_mode.py
 .. _ProPixx projector: https://github.com/herrlich10/psykit/blob/master/psykit/demos/propixx_polarizer.py
 .. _cross-talk compensation: https://github.com/herrlich10/psykit/blob/master/psykit/demos/stereo_modes.py
 .. _at runtime: https://github.com/herrlich10/psykit/blob/master/psykit/demos/stereo_modes.py
@@ -123,6 +125,7 @@ You may also find the following demo stripts useful:
 
 - demos/minimum_example.py    # A minimum quickstart script that uses StereoWindow
 - demos/stereo_modes.py       # Switch between modes at runtime and adjust cross-talk compensation
+- demos/dualhead_mode.py      # Use 'dual-head' mode to draw two eye's views in two physical screens
 - demos/visual_stims.py       # Draw various stimuli (e.g., Aperture) in StereoWindow
 - demos/adjust_fixation.py    # Adjust vergence and coordinate origin for 'left/right' mode
 - demos/propixx_polarizer.py  # Work with different 3D modes of ProPixx projector
