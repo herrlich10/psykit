@@ -127,7 +127,7 @@ class StereoWindow(visual.Window):
         self._fixationOffset = np.r_[0.0, 0.0]
         self._fixationVergence = 0.0
         self._fixationTilt = 0.0
-        self._crossTalk = np.r_[0.0, 0.0]
+        self._crossTalk = np.zeros([2,3])
         # Handle the special case of 'quad-buffered' mode (requiring special backend window)
         if stereoMode == 'quad-buffered':
             self._stereoMode = stereoMode # Without calling the setter
@@ -243,12 +243,17 @@ class StereoWindow(visual.Window):
             for loc, y in zip(['top', 'bottom'], [1, -1]):
                 start = layout.Vector([-1,y], 'norm', self).pix - np.sign(y)*posfix[loc]
                 end = layout.Vector([1,y], 'norm', self).pix - np.sign(y)*posfix[loc]
-                for eye, color in zip(['left', 'right'], [[255,255,255], [0,0,0]]):
-                    # Blue line in left eye, black line in right eye
+#                for eye, color in zip(['left', 'right'], [[255,255,255], [0,0,0]]):
+#                    # Blue line in left eye, black line in right eye
+#                    self._blueLines[eye,loc] = visual.Line(win=self, units='pix', 
+#                        start=start, end=end, colorSpace='rgb255',
+#                        interpolate=False, lineWidth=3) # MUST set `interpolate` to False
+#                    self._blueLines[eye,loc].color = color # Psychopy bug: Must set here
+                # There seem to be bugs in PsychoPy 2025.1.0, so that 'rgb255' won't work
+                for eye, color in zip(['left', 'right'], [1, -1]):
                     self._blueLines[eye,loc] = visual.Line(win=self, units='pix', 
-                        start=start, end=end, colorSpace='rgb255',
-                        interpolate=False, lineWidth=3) # MUST set `interpolate` to False
-                    self._blueLines[eye,loc].color = color # Psychopy bug: Must set here
+                        start=start, end=end, color=color, lineWidth=3,
+                        interpolate=False) # MUST set `interpolate` to False
 
 
     @property
@@ -453,7 +458,7 @@ class StereoWindow(visual.Window):
                 gltools.use_texture(self._texLE, 0, program, b"textureThis")
                 gltools.use_texture(self._texRE, 1, program, b"textureOther")
                 GL.glUniform3f(GL.glGetUniformLocation(program, b"crossTalk"), 
-                    self._crossTalk[0], self._crossTalk[0], self._crossTalk[0])
+                    self._crossTalk[0,0], self._crossTalk[0,1], self._crossTalk[0,2])
             else:
                 gltools.use_texture(self._texLE, 0) # Bind LE to texture unit 0
         elif eye == 'right':
@@ -461,7 +466,7 @@ class StereoWindow(visual.Window):
                 gltools.use_texture(self._texRE, 0, program, b"textureThis")
                 gltools.use_texture(self._texLE, 1, program, b"textureOther")
                 GL.glUniform3f(GL.glGetUniformLocation(program, b"crossTalk"), 
-                    self._crossTalk[1], self._crossTalk[1], self._crossTalk[1])
+                    self._crossTalk[1,0], self._crossTalk[1,1], self._crossTalk[1,2])
             else:
                 gltools.use_texture(self._texRE, 0) # Bind RE to texture unit 0
         # Draw a rectangle (in fact, two triangles)
@@ -520,20 +525,35 @@ class StereoWindow(visual.Window):
 
         Parameters
         ----------
-        crossTalk : array-like of shape (2,)
-            [leakage in the LE from the RE, leakage in the RE from the LE]. E.g.,
+        crossTalk : array-like of shape (2,) or (2,3)
+            Cross-talk factors (for R/G/B channels) of the two eyes.
+            The left eye coefficients represent the leakage of the right eye 
+            stimulus into the left eye.
+            
+            If an array of shape (2,) is given, all channels will be set 
+            to the same value. E.g.,
             [0.1, 0.05] means the left eye can see 10% of the right eye image, 
             while the right eye can see 5% of the left eye image.
+            
+            If an array of shape (2,3) is given, the first row is for the LE,
+            and the second row is for the RE. E.g.,
+            [[0.02, 0.03, 0.06], [0.0, 0.0, 0.1]] means the left eye can see 
+            2% of the red, 3% of the green, and 6% of the blue channel of the 
+            right eye image.
         '''
         if crossTalk is None:
-            crossTalk = [0, 0]
-        self._crossTalk[0] = max(0.0, min(1.0, crossTalk[0]))
-        self._crossTalk[1] = max(0.0, min(1.0, crossTalk[1]))
+            crossTalk = np.zeros([2,3])
+        else:
+            crossTalk = np.asanyarray(crossTalk)
+            if crossTalk.size == 2:
+                crossTalk = np.ones([2,3]) * crossTalk.reshape(-1,1)
+        self._crossTalk[0] = np.maximum(0.0, np.minimum(1.0, crossTalk[0]))
+        self._crossTalk[1] = np.maximum(0.0, np.minimum(1.0, crossTalk[1]))
         for mode in ['red/green-anticross', 'green/red-anticross', 'red/blue-anticross', 'blue/red-anticross']:
             program = self._stereoShaders[mode]
             GL.glUseProgram(program) # Use stereo shader
             GL.glUniform2f(GL.glGetUniformLocation(program, b"crossTalk"), 
-                self._crossTalk[0], self._crossTalk[1])
+                self._crossTalk[0][0], self._crossTalk[1][0])
             GL.glUseProgram(0) # Reset shader
         # Note that the crossTalk uniform is set at draw time for top/bottom-anticross
 
