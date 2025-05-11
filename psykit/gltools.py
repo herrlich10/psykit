@@ -236,6 +236,11 @@ def set_uniform(program, name, value):
                 # (uniform's location, how many matrices to send, transpose (default=GL_FALSE is F order), pointer to matrix values)
                 data = (GLfloat*value.size)(*value.flat)
                 glUniformMatrix4fv(loc, 1, GL_TRUE, data)
+        elif value.shape == (3,3):
+            if value.dtype.kind == 'f':
+                # (uniform's location, how many matrices to send, transpose (default=GL_FALSE is F order), pointer to matrix values)
+                data = (GLfloat*value.size)(*value.flat)
+                glUniformMatrix3fv(loc, 1, GL_TRUE, data)
 
 
 # ========== Vertex buffer object (VBO) ==========
@@ -582,3 +587,33 @@ def create_renderbuffer(size, format=GL_DEPTH24_STENCIL8, bind=False):
     if not bind:
         glBindRenderbuffer(GL_RENDERBUFFER, 0)
     return rbo
+
+
+# ========== Utilities ==========
+def as_str(c_str):
+    '''
+    Convert a ctypes string to Python string.
+
+    E.g, glGetString() returns a ctypes string (LP_c_ubyte object, which is a 
+    pointer to char or ubyte). as_str(glGetString()) returns a str.
+    '''
+    return ctypes.string_at(c_str).decode('utf-8')
+
+
+def get_OpenGL_version():
+    '''
+    Get OpenGL and GLSL version we're currently using.
+
+    For PsychoPy v2024.1.4 running on MacBook Pro (macOS 12.3.1), the result is:
+    ('2.1 ATI-4.8.15', '1.20')
+    
+    Returns
+    -------
+    gl_ver : str
+        OpenGL version
+    glsl_ver : str
+        GLSL version
+    '''
+    gl_ver = as_str(glGetString(GL_VERSION))
+    glsl_ver = as_str(glGetString(GL_SHADING_LANGUAGE_VERSION))
+    return gl_ver, glsl_ver
