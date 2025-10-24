@@ -183,7 +183,8 @@ class StereoWindow(visual.Window):
                 self._stereoShaders[mode] = program
             # Shader program for 'left/right' and 'right/left' modes
             program = gltools.compile_shader_program(
-                vertCentralX_src, fragTexture_src)
+                # vertCentralX_src, fragTexture_src)
+                vertVergenceX_src, fragTexture_src)
             gltools.use_texture(self._texLE, 0, program, b"aTex")
             for mode in ['left/right', 'right/left']:
                 self._stereoShaders[mode] = program
@@ -375,14 +376,43 @@ class StereoWindow(visual.Window):
                 eyes = self.stereoMode.split('/')
                 sign = lambda eye: 1 if eye=='left' else -1 # Positive for the LE, and negative for the RE
                 # Render on the left part of the screen
-                GL.glViewport(int(self._fixationOffset[0] + sign(eyes[0])*self._fixationVergence), 
+                # GL.glViewport(int(self._fixationOffset[0] + sign(eyes[0])*self._fixationVergence), 
+                #     int(self._fixationOffset[1] + sign(eyes[0])*self._fixationTilt), 
+                #     self.size[0]//2, self.size[1])
+                program = self._stereoShaders[self.stereoMode]
+                GL.glUseProgram(program) # Use stereo shader
+                GL.glUniform1f(GL.glGetUniformLocation(program, b"vergenceFrac"), 
+                    self._fixationVergence/self.size[0])
+                GL.glUniform1f(GL.glGetUniformLocation(program, b"xoffsetFrac_L"), 
+                    self._fixationOffset[0]/self.size[0])
+                GL.glUniform1f(GL.glGetUniformLocation(program, b"xoffsetFrac_R"), 
+                    0)
+                GL.glUseProgram(0) # Reset shader
+                # GL.glViewport(int(self._fixationOffset[0]), 
+                #     int(self._fixationOffset[1] + sign(eyes[0])*self._fixationTilt), 
+                #     self.size[0]//2, self.size[1])
+                GL.glViewport(0, 
                     int(self._fixationOffset[1] + sign(eyes[0])*self._fixationTilt), 
-                    self.size[0]//2, self.size[1])
+                    self.size[0]//2+int(self._fixationOffset[0]), self.size[1])
                 self._blipEyeBuffer(eye=eyes[0])
                 # Render on the right part of the screen
-                GL.glViewport(int(self.size[0]//2 + self._fixationOffset[0] + sign(eyes[1])*self._fixationVergence), 
+                # GL.glViewport(int(self.size[0]//2 + self._fixationOffset[0] + sign(eyes[1])*self._fixationVergence), 
+                #     int(self._fixationOffset[1] + sign(eyes[1])*self._fixationTilt), 
+                #     self.size[0]//2, self.size[1])
+                GL.glUseProgram(program) # Use stereo shader
+                GL.glUniform1f(GL.glGetUniformLocation(program, b"vergenceFrac"), 
+                    -self._fixationVergence/self.size[0])
+                GL.glUniform1f(GL.glGetUniformLocation(program, b"xoffsetFrac_L"), 
+                    0)
+                GL.glUniform1f(GL.glGetUniformLocation(program, b"xoffsetFrac_R"), 
+                    self._fixationOffset[0]/self.size[0])
+                GL.glUseProgram(0) # Reset shader
+                # GL.glViewport(int(self.size[0]//2 + self._fixationOffset[0]), 
+                #     int(self._fixationOffset[1] + sign(eyes[1])*self._fixationTilt), 
+                #     self.size[0]//2, self.size[1])
+                GL.glViewport(int(self.size[0]//2 + self._fixationOffset[0]), 
                     int(self._fixationOffset[1] + sign(eyes[1])*self._fixationTilt), 
-                    self.size[0]//2, self.size[1])
+                    self.size[0]//2-int(self._fixationOffset[0]), self.size[1])
                 self._blipEyeBuffer(eye=eyes[1])
             elif self.stereoMode in ['top/bottom', 'bottom/top', 'top/bottom-anticross', 'bottom/top-anticross']:
                 eyes = {k: v for k, v in zip(self.stereoMode.split('-')[0].split('/'), ['left', 'right'])}
@@ -609,6 +639,7 @@ class StereoWindow(visual.Window):
         '''
         v = layout.Vector([vergence, 0], self.units, self)
         self._fixationVergence = v.pix[0]
+        # Set vergenceFrac uniform for the vertex shader in 'left/right' and 'right/left' modes
 
     @property
     def fixationTilt(self):
@@ -673,6 +704,24 @@ vertCentralY_src = '''
         gl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0);
         float frac = 0.5;
         TexCoords = vec2(aTexCoords.x, (1.0-frac)/2.0+frac*aTexCoords.y);
+    }  
+'''
+
+# Vertex shader for drawing the central part of the texture in x direction
+# without overlap in the middle
+# (for 'left/right' and 'right/left' modes)
+vertVergenceX_src = '''
+    attribute vec3 aPos;        // Location 0
+    attribute vec2 aTexCoords;  // Location 1
+    varying vec2 TexCoords;     // out
+    uniform float vergenceFrac; // vergence/width
+    uniform float xoffsetFrac_L; // xoffset/width for the left screen
+    uniform float xoffsetFrac_R; // xoffset/width for the right screen
+    void main()
+    {
+        gl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0);
+        float frac = 0.5;
+        TexCoords = vec2((1.0-frac)/2.0 -xoffsetFrac_L + (frac+xoffsetFrac_L-xoffsetFrac_R)*aTexCoords.x - vergenceFrac, aTexCoords.y);
     }  
 '''
 
