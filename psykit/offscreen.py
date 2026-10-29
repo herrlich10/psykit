@@ -156,7 +156,7 @@ def draw_texture(win, tex, src_rect=None, dst_rect=None, rotation=0, alpha=1,
 
 # Old compatibility profile shaders
 # Vertex shader for drawing a texture with in-plane rotation
-vertTexture_src = '''
+_vertTexture_src = '''
     attribute vec3 aPos;        // Location 0
     attribute vec2 aTexCoords;  // Location 1
     varying vec2 TexCoords;     // out
@@ -169,7 +169,7 @@ vertTexture_src = '''
 '''
 
 # Fragment shaders for drawing a texture
-fragTexture_src = '''
+_fragTexture_src = '''
     varying vec2 TexCoords;     // in
     uniform sampler2D aTex;
     uniform float globalAlpha;
@@ -180,8 +180,85 @@ fragTexture_src = '''
     }
 '''
 
-_texture_program = gltools.compile_shader_program(vertTexture_src, fragTexture_src)
+_texture_program = gltools.compile_shader_program(_vertTexture_src, _fragTexture_src)
 # # For the single texture case, the following doesn't seem to be needed
 # GL.glUseProgram(_texture_program)
 # GL.glUniform1i(GL.glGetUniformLocation(_texture_program, b'aTex'), 0)
 # GL.glUseProgram(0)
+
+
+# Fragment shaders for drawing a texture applying a 3x3 convolution kernel
+_fragKernel3_src = '''
+    varying vec2 TexCoords;     // in
+    uniform sampler2D aTex;
+    uniform float globalAlpha;
+    uniform vec2 textureSize;
+    uniform mat3 kernel;
+    void main()
+    {
+        vec2 texelSize = 1.0 / textureSize;
+        gl_FragColor = // Hard code the 3x3 kernel without using loop
+            texture2D(aTex, TexCoords + vec2(-1,-1)*texelSize) * kernel[0][0] +
+            texture2D(aTex, TexCoords + vec2( 0,-1)*texelSize) * kernel[0][1] +
+            texture2D(aTex, TexCoords + vec2( 1,-1)*texelSize) * kernel[0][2] + 
+            texture2D(aTex, TexCoords + vec2(-1, 0)*texelSize) * kernel[1][0] +
+            texture2D(aTex, TexCoords + vec2( 0, 0)*texelSize) * kernel[1][1] +
+            texture2D(aTex, TexCoords + vec2( 1, 0)*texelSize) * kernel[1][2] +
+            texture2D(aTex, TexCoords + vec2(-1, 1)*texelSize) * kernel[2][0] +
+            texture2D(aTex, TexCoords + vec2( 0, 1)*texelSize) * kernel[2][1] +
+            texture2D(aTex, TexCoords + vec2( 1, 1)*texelSize) * kernel[2][2];
+        gl_FragColor.w *= globalAlpha; // Modulated by global alpha
+    }
+'''
+
+def create_3x3_kernel_program(tex_size, kernel):
+    kernel = np.asanyarray(kernel, dtype=float)
+    # Create shader program
+    program = gltools.compile_shader_program(_vertTexture_src, _fragKernel3_src)
+    # Set uniform variables
+    GL.glUseProgram(program)
+    GL.glUniform2f(GL.glGetUniformLocation(program, b'textureSize'), tex_size[0], tex_size[1])
+    gltools.set_uniform(program, b'kernel', kernel)
+    GL.glUseProgram(0)
+    return program
+
+
+
+
+def create_separable_kernel_program(tex_size, x_kernel, y_kernel=None):
+    x_kernel = np.asanyarray(x_kernel, dtype=float)
+    if y_kernel is not None:
+        y_kernel = x_kernel.copy()
+    m, n = len(y_kernel), len(x_kernel)
+    # Fragment shaders for drawing a texture applying a separable convolution kernel
+    _fragSeparable_src = f'''
+        varying vec2 TexCoords;     // in
+        uniform sampler2D aTex;
+        uniform float globalAlpha;
+        uniform vec2 textureSize;
+        uniform float xKernel[{n}];
+
+        void main()
+        {{
+            vec2 texelSize = 1.0 / textureSize;
+            gl_FragColor = vec4(0.0);
+            for (int j = 0; j < {n}; j++) {{
+                // Calculate texture coordinate offset
+                vec2 offset = vec2(float(j - {n//2}), 0) * texelSize;
+                // Sample the texture at offset position
+                vec4 texColor = texture2D(aTex, TexCoords + offset);
+                // Apply kernel weight and accumulate
+                gl_FragColor += texColor * xKernel[j];
+            }}
+            gl_FragColor.w *= globalAlpha; // Modulated by global alpha
+        }}
+    '''
+    # Create shader program
+    program = gltools.compile_shader_program(_vertTexture_src, 
+        _fragSeparable_src.format(n=len(x_kernel)))
+    # Set uniform variables
+    GL.glUseProgram(program)
+    GL.glUniform2f(GL.glGetUniformLocation(program, b'textureSize'), tex_size[0], tex_size[1])
+    gltools.set_uniform(program, b'xKernel', x_kernel)
+    GL.glUseProgram(0)
+    return program

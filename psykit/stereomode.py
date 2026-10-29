@@ -124,9 +124,9 @@ class StereoWindow(visual.Window):
             or shutter glasses, e.g., the first generation NNL goggles.
         '''
         # Initialize property variables
-        self._fixationOffset = np.r_[0.0, 0.0]
-        self._fixationVergence = 0.0
-        self._fixationTilt = 0.0
+        self._fixationOffset = np.r_[0.0, 0.0]  # Stored in pixels internally
+        self._fixationVergence = 0.0            # Stored in pixels internally
+        self._fixationTilt = 0.0                # Stored in pixels internally
         self._crossTalk = np.zeros([2,3])
         # Handle the special case of 'quad-buffered' mode (requiring special backend window)
         if stereoMode == 'quad-buffered':
@@ -435,7 +435,7 @@ class StereoWindow(visual.Window):
                 self._blipEyeBuffer(eye='left')
                 self._drawBlueLine(eye='left')
             # Call base class method
-            flipTime = super().flip(clearBuffer=clearBuffer)
+            flipTime = super().flip(clearBuffer=clearBuffer) # Here we only clear output buffer but not eye buffers
             if self.stereoMode in ['sequential'] and self.flipCallback is not None:
                 self.flipCallback(eye='right')
             elif self.stereoMode in ['dual-head']:
@@ -452,6 +452,13 @@ class StereoWindow(visual.Window):
                 self._setCurrent()
             # Restore autoDraw
             self._toDraw = backup
+            # Also clear eye buffers after flip as required by `clearBuffer` # Fixed bug: 20261028 by qcc
+            if clearBuffer:
+                GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self._fboLE) # Bind left eye framebuffer
+                self.clearBuffer() # Only clear color buffer by default (and keep stencil buffer for visual.Aperture)
+                GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self._fboRE) # Bind right eye framebuffer
+                self.clearBuffer()
+                GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0) # Back to default
         # Return flip time
         return flipTime
 
