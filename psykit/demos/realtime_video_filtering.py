@@ -18,7 +18,7 @@ import numpy as np
 win = visual.Window(monitor='testMonitor', units='deg', fullscr=False)
 WHR = win.size[0]/win.size[1] # Window aspect ratio
 # Create texture
-movie = visual.MovieStim(win, filename='/Users/ccqian/Movies/figures01.mkv')
+movie = visual.MovieStim(win, filename='my-favorite-movie.mkv')
 whr = movie.videoSize[0]/movie.videoSize[1] # Movie aspect ratio
 # Prepare custom shader program to apply a 3x3 gaussian blur
 # box_blur = offscreen.create_3x3_kernel_program(movie.videoSize, np.ones((3,3))/9*2)

@@ -11,6 +11,7 @@
 # sys.path.insert(0, path.realpath(f"{path.dirname(__file__)}/../.."))
 from psychopy import visual, event, core
 from psykit import create_texture, draw_texture
+from psykit import demo_path
 from matplotlib.pyplot import imread
 
 
@@ -19,7 +20,7 @@ win = visual.Window(monitor='testMonitor', units='norm', fullscr=False, color='g
 mouse = event.Mouse()
 # Create texture
 # im = imread('qtywscy.jpg')
-im = imread('jgscy.png')
+im = imread(demo_path/'jgscy.png')
 tex = create_texture(im)
 rotation = 0
 focusing = False

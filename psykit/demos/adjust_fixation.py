@@ -10,10 +10,11 @@
 # Press `return` (or 'up'/'down') to iterate through different visual stimuli.
 # Press `escape` to quit.
 import numpy as np
-from psychopy import visual, event, core
+from psychopy import visual, event, core, plugins
 import sys, os.path as path
 sys.path.insert(0, path.realpath(f"{path.dirname(__file__)}/../.."))
 from psykit.stereomode import StereoWindow
+from psykit import demo_path
 
 
 # Open a stereo window
@@ -34,10 +35,10 @@ adjust_idx = 0
 delta = 5
 # Define stimuli
 gabor = visual.GratingStim(win, tex='sin', mask='gauss', size=[5,5], sf=1)
-image = visual.ImageStim(win, image='qtywscy.jpg', mask='gauss', size=[5,5*465/367])
+image = visual.ImageStim(win, image=demo_path/'qtywscy.jpg', mask='gauss', size=[5,5*465/367])
 rect = visual.rect.Rect(win, width=5, height=5, color='black')
 # image2 = visual.SimpleImageStim(win, image='jgscy.png', pos=[-1,0])
-image2 = visual.SimpleImageStim(win, image='qtywscy.jpg', pos=[0,0])
+image2 = visual.SimpleImageStim(win, image=demo_path/'qtywscy.jpg', pos=[0,0])
 dots = visual.DotStim(win, nDots=100, dotSize=5, fieldSize=[5,5], fieldShape='circle', 
     dir=0, coherence=0.5, dotLife=20, speed=2/60) # dotLife is important; speed in units/frame
 gabor2 = visual.GratingStim(win, tex='sin', mask='gauss', size=[5,5], sf=0.5, ori=-30)
@@ -51,13 +52,13 @@ try:
     radial = visual.RadialStim(win, tex='sqrXsqr', size=[5,5])
     stims.append(radial)
     has_radial = True
-except (AttributeError, TypeError):
+except (AttributeError, TypeError, plugins.util.PluginRequiredError):
     has_radial = False
 try:
     noise = visual.NoiseStim(win, mask='circle', size=[5,5], noiseType='filtered')
     stims.append(noise)
     has_noise = True
-except (AttributeError, TypeError):
+except (AttributeError, TypeError, plugins.util.PluginRequiredError):
     print('You need to install psychopy-visionscience in the plugin manager.')
     has_noise = False
 stim_idx = 0

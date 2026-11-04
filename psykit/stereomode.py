@@ -453,7 +453,7 @@ class StereoWindow(visual.Window):
             # Restore autoDraw
             self._toDraw = backup
             # Also clear eye buffers after flip as required by `clearBuffer` # Fixed bug: 20261028 by qcc
-            if clearBuffer:
+            if clearBuffer and self.stereoMode is not None: # self.stereoMode is None during __init__
                 GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self._fboLE) # Bind left eye framebuffer
                 self.clearBuffer() # Only clear color buffer by default (and keep stencil buffer for visual.Aperture)
                 GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self._fboRE) # Bind right eye framebuffer

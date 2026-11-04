@@ -104,5 +104,19 @@ class TestStereoWindowFlip(unittest.TestCase):
                 self.assertAlmostEqual(third[eye], 0, msg=f"{eye} eye: buffer was not cleared after flip")
 
 
+class TestStereoWindowCheckTiming(unittest.TestCase):
+
+    def setUp(self):
+        self.win = StereoWindow(monitor="testMonitor", units="pix", size=(400,300),             
+            stereoMode="left/right", color="black", checkTiming=True)
+        workaround_macOS_DisplayLink_hang(self.win)
+
+    def tearDown(self):
+        self.win.close()
+
+    def test_check_timing(self):
+        self.win.flip()
+
+
 if __name__ == "__main__":
     unittest.main()
